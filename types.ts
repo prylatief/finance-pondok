@@ -33,3 +33,11 @@ export interface MonthlySummary {
     balance: number;
     transactions: Transaction[];
 }
+
+export interface MonthlyBreakdown {
+  month: string;
+  monthIndex: number;
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
