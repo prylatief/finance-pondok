@@ -20,35 +20,72 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Helper functions to interact with localStorage
+const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
+    try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : defaultValue;
+    } catch (error) {
+        console.warn(`Error reading localStorage key "${key}":`, error);
+        return defaultValue;
+    }
+};
+
+const saveToStorage = <T,>(key: string, value: T) => {
+    try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.warn(`Error setting localStorage key "${key}":`, error);
+    }
+};
+
+
 export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<PondokSettings>({
+  const [settings, setSettings] = useState<PondokSettings>(() => loadFromStorage<PondokSettings>('pondokSettings', {
     name: 'Pondok Pesantren Al-Hidayah',
     address: 'Jl. Kebenaran No. 1, Kota Berkah',
     treasurerName: 'Ahmad Syafi\'i',
-  });
+  }));
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = () => {
-      const data = generateInitialData();
-      setCategories(data.categories);
-      setTransactions(data.transactions);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
+    const loadInitialData = () => {
+        let storedCategories = loadFromStorage<Category[]>('categories', []);
+        let storedTransactions = loadFromStorage<Transaction[]>('transactions', []);
 
-  const updateSettings = (newSettings: PondokSettings) => setSettings(newSettings);
+        if (storedCategories.length === 0 || storedTransactions.length === 0) {
+            const initialData = generateInitialData();
+            storedCategories = initialData.categories;
+            storedTransactions = initialData.transactions;
+            saveToStorage('categories', storedCategories);
+            saveToStorage('transactions', storedTransactions);
+        }
+
+        setCategories(storedCategories);
+        setTransactions(storedTransactions);
+        setLoading(false);
+    };
+    loadInitialData();
+  }, []);
+  
+  const updateSettings = (newSettings: PondokSettings) => {
+    setSettings(newSettings);
+    saveToStorage('pondokSettings', newSettings);
+  };
   
   const addCategory = (category: Omit<Category, 'id'>) => {
     const newCategory: Category = { ...category, id: `cat-${Date.now()}` };
-    setCategories(prev => [...prev, newCategory]);
+    const updatedCategories = [...categories, newCategory];
+    setCategories(updatedCategories);
+    saveToStorage('categories', updatedCategories);
   };
 
   const updateCategory = (updatedCategory: Category) => {
-    setCategories(prev => prev.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat)));
+    const updatedCategories = categories.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat));
+    setCategories(updatedCategories);
+    saveToStorage('categories', updatedCategories);
   };
 
   const deleteCategory = (id: string): boolean => {
@@ -57,7 +94,9 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       alert('Kategori ini sedang digunakan dalam transaksi dan tidak bisa dihapus.');
       return false;
     }
-    setCategories(prev => prev.filter(cat => cat.id !== id));
+    const updatedCategories = categories.filter(cat => cat.id !== id);
+    setCategories(updatedCategories);
+    saveToStorage('categories', updatedCategories);
     return true;
   };
   
@@ -71,15 +110,21 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       id: `trx-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
-    setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const updatedTransactions = [newTransaction, ...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setTransactions(updatedTransactions);
+    saveToStorage('transactions', updatedTransactions);
   };
 
   const updateTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(prev => prev.map(trx => (trx.id === updatedTransaction.id ? updatedTransaction : trx)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    const updatedTransactions = transactions.map(trx => (trx.id === updatedTransaction.id ? updatedTransaction : trx)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setTransactions(updatedTransactions);
+    saveToStorage('transactions', updatedTransactions);
   };
 
   const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(trx => trx.id !== id));
+    const updatedTransactions = transactions.filter(trx => trx.id !== id);
+    setTransactions(updatedTransactions);
+    saveToStorage('transactions', updatedTransactions);
   };
 
   const value = {

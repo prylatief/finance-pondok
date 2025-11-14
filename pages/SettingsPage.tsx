@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { PondokSettings, Category, TransactionType } from '../types';
@@ -29,6 +28,12 @@ const CategoryManager: React.FC = () => {
             addCategory(formData);
         }
         handleCancel();
+    };
+    
+    const handleDelete = (id: string) => {
+        if (window.confirm('Apakah Anda yakin ingin menghapus kategori ini?')) {
+            deleteCategory(id);
+        }
     };
 
     return (
@@ -76,7 +81,7 @@ const CategoryManager: React.FC = () => {
                         </div>
                         <div className="flex space-x-3">
                             <button onClick={() => handleEdit(cat)} className="text-slate-400 hover:text-primary-600"><PencilIcon /></button>
-                            <button onClick={() => deleteCategory(cat.id)} className="text-slate-400 hover:text-red-600"><TrashIcon /></button>
+                            <button onClick={() => handleDelete(cat.id)} className="text-slate-400 hover:text-red-600"><TrashIcon /></button>
                         </div>
                     </div>
                 ))}
