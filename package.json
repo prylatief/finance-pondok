@@ -9,12 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.86.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
-    "recharts": "^3.4.1",
-    "react-dom": "^19.2.0",
     "react": "^19.2.0",
-    "react-router-dom": "^7.9.6"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.6",
+    "recharts": "^3.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
