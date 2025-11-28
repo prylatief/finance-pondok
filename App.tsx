@@ -7,6 +7,7 @@ import ReportsPage from "./pages/ReportsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import { AppContextProvider } from './context/AppContext';
+import { checkSupabaseConnection } from './lib/supabase';
 
 // FIX: Replaced unused PrivateRoute with a layout route component for authenticated users.
 const PrivateRoutes: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
@@ -23,6 +24,20 @@ export default function App() {
   useEffect(() => {
     setIsAuthenticated(localStorage.getItem("token") === "fake-jwt-token");
   }, [location]);
+
+  // Test Supabase connection on app load
+  useEffect(() => {
+    const testConnection = async () => {
+      console.log('🔍 Testing Supabase connection...');
+      const isConnected = await checkSupabaseConnection();
+      if (isConnected) {
+        console.log('✅ Supabase connected successfully! 🎉');
+      } else {
+        console.error('❌ Failed to connect to Supabase');
+      }
+    };
+    testConnection();
+  }, []);
 
 
   return (
