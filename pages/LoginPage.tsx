@@ -1,26 +1,44 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signInWithEmail } from '../services/authService';
 
 interface LoginPageProps {
   onLogin: () => void;
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
-  const [username, setUsername] = useState('bendahara');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'bendahara' && password === 'password123') {
-      localStorage.setItem('token', 'fake-jwt-token');
-      localStorage.setItem('user', JSON.stringify({ username: 'bendahara', role: 'bendahara' }));
-      onLogin();
-      navigate('/dashboard');
-    } else {
-      setError('Username atau password salah');
+    setError('');
+    setLoading(true);
+
+    try {
+      const { user, session, error: authError } = await signInWithEmail(email, password);
+
+      if (authError) {
+        setError(authError.message === 'Invalid login credentials'
+          ? 'Email atau password salah'
+          : authError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (user && session) {
+        onLogin();
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Terjadi kesalahan saat login. Silakan coba lagi.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -34,25 +52,27 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-slate-700">
-                Username
+              <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                Email
               </label>
               <div className="mt-1">
                 <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="contoh@email.com"
+                  disabled={loading}
+                  className="block w-full appearance-none rounded-md border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password"className="block text-sm font-medium text-slate-700">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                 Password
               </label>
               <div className="mt-1">
@@ -64,7 +84,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+                  placeholder="Masukkan password"
+                  disabled={loading}
+                  className="block w-full appearance-none rounded-md border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -74,10 +96,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  disabled={loading}
+                  className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed"
+                />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
                   Ingat saya
                 </label>
@@ -87,15 +115,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             <div>
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-md border border-transparent bg-primary-700 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                disabled={loading}
+                className="flex w-full justify-center rounded-md border border-transparent bg-primary-700 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-primary-400 disabled:cursor-not-allowed"
               >
-                Masuk
+                {loading ? 'Memproses...' : 'Masuk'}
               </button>
             </div>
           </form>
         </div>
         <p className="mt-6 text-center text-xs text-slate-500">
-            Gunakan <code className="font-mono bg-slate-200 p-1 rounded">bendahara</code> / <code className="font-mono bg-slate-200 p-1 rounded">password123</code> untuk login.
+            Silakan login menggunakan email dan password yang sudah terdaftar di Supabase.
         </p>
       </div>
     </div>
