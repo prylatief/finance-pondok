@@ -31,6 +31,7 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; children: React.Rea
 
 const SidebarContent: React.FC<{onNavItemClick?: () => void, onLogout: () => void}> = ({onNavItemClick, onLogout}) => {
   const navigate = useNavigate();
+  const { settings } = useAppContext();
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -43,7 +44,7 @@ const SidebarContent: React.FC<{onNavItemClick?: () => void, onLogout: () => voi
     <div className="flex h-full flex-col bg-primary-900 text-white">
       <div className="flex h-20 items-center justify-center border-b border-primary-800 px-6 bg-primary-950/20">
         <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
-            <Logo className="h-8 w-8 text-white" textSize="text-lg text-white" />
+            <Logo className="h-8 w-8 text-white" textSize="text-lg text-white" src={settings.logoUrl} />
         </div>
       </div>
       <nav className="flex-1 space-y-1 p-3 mt-4">
@@ -111,7 +112,7 @@ export default function Layout({ onLogout }: LayoutProps) {
           </button>
           
           <div className="md:hidden">
-              <Logo className="h-8 w-8" showText={false} />
+              <Logo className="h-8 w-8" showText={false} src={settings.logoUrl} />
           </div>
 
           <div className="text-right">

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -111,17 +112,31 @@ export default function ReportsPage() {
     const doc = new jsPDF();
     let finalY = 0;
 
+    // --- LOGO Handling ---
+    let textX = 14; // Default left margin
+    if (settings.logoUrl) {
+        try {
+            // x=14, y=10, width=24, height=24 (Square)
+            doc.addImage(settings.logoUrl, 14, 10, 24, 24);
+            textX = 42; // Shift text to the right if logo exists
+        } catch (error) {
+            console.error("Failed to add logo to PDF", error);
+        }
+    }
+
     // --- PDF Header ---
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(settings.name, 14, 22);
+    doc.text(settings.name, textX, 22);
+    
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Laporan Keuangan Bulan ${months[month]} ${year}`, 14, 30);
+    doc.text(`Laporan Keuangan Bulan ${months[month]} ${year}`, textX, 30);
+    
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Disusun oleh: ${settings.treasurerName}`, 14, 36);
-    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 41);
+    doc.text(`Disusun oleh: ${settings.treasurerName}`, textX, 36);
+    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, textX, 41);
 
     // --- Summary Table ---
     (doc as any).autoTable({
@@ -177,18 +192,31 @@ export default function ReportsPage() {
   const handleDownloadAnnualPdf = () => {
     if (!annualReportData) return;
     const doc = new jsPDF();
+
+    // --- LOGO Handling ---
+    let textX = 14; 
+    if (settings.logoUrl) {
+        try {
+            doc.addImage(settings.logoUrl, 14, 10, 24, 24);
+            textX = 42; 
+        } catch (error) {
+            console.error("Failed to add logo to PDF", error);
+        }
+    }
     
     // --- PDF Header ---
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(settings.name, 14, 22);
+    doc.text(settings.name, textX, 22);
+    
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Laporan Keuangan Tahunan ${year}`, 14, 30);
+    doc.text(`Laporan Keuangan Tahunan ${year}`, textX, 30);
+    
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`Disusun oleh: ${settings.treasurerName}`, 14, 36);
-    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 41);
+    doc.text(`Disusun oleh: ${settings.treasurerName}`, textX, 36);
+    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, textX, 41);
 
     // --- Summary Table ---
      (doc as any).autoTable({

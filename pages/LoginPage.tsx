@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Logo } from '../components/Logo';
+import { useAppContext } from '../context/AppContext';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -12,6 +13,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [password, setPassword] = useState('password123');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { settings } = useAppContext();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       <div className="w-full max-w-md relative z-10">
         <div className="mb-8 flex flex-col items-center">
             <div className="p-4 bg-white rounded-full shadow-md mb-4">
-                <Logo className="h-16 w-16" showText={false} />
+                <Logo className="h-16 w-16" showText={false} src={settings.logoUrl} />
             </div>
             <h1 className="text-3xl font-bold text-slate-800">Selamat Datang</h1>
             <p className="text-slate-500 mt-2 text-center">Silakan masuk untuk mengelola keuangan pondok.</p>
