@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 // FIX: Import Outlet to render nested routes.
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { MenuIcon, XIcon, HomeIcon, CurrencyDollarIcon, DocumentReportIcon, CogIcon, LogoutIcon } from './icons/Icons';
+import { Logo } from './Logo';
 
 interface LayoutProps {
   // FIX: The children prop is no longer needed as nested routes will be rendered via Outlet.
@@ -39,10 +41,12 @@ const SidebarContent: React.FC<{onNavItemClick?: () => void, onLogout: () => voi
   
   return (
     <div className="flex h-full flex-col bg-primary-900 text-white">
-      <div className="flex h-16 items-center justify-center border-b border-primary-800 px-6">
-        <h1 className="text-xl font-bold text-white">Pondok<span className="font-light text-primary-300">Finance</span></h1>
+      <div className="flex h-20 items-center justify-center border-b border-primary-800 px-6 bg-primary-950/20">
+        <div className="bg-white/10 p-2 rounded-xl backdrop-blur-sm">
+            <Logo className="h-8 w-8 text-white" textSize="text-lg text-white" />
+        </div>
       </div>
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 p-3 mt-4">
         <NavItem to="/dashboard" icon={<HomeIcon />} onClick={onNavItemClick}>Dashboard</NavItem>
         <NavItem to="/transaksi" icon={<CurrencyDollarIcon />} onClick={onNavItemClick}>Transaksi</NavItem>
         <NavItem to="/laporan" icon={<DocumentReportIcon />} onClick={onNavItemClick}>Laporan</NavItem>
@@ -70,7 +74,7 @@ export default function Layout({ onLogout }: LayoutProps) {
   return (
     <div className="flex h-screen bg-slate-100">
       {/* Static sidebar for desktop */}
-      <aside className="hidden w-64 md:block">
+      <aside className="hidden w-64 md:block shadow-xl z-20">
         <SidebarContent onLogout={onLogout} />
       </aside>
 
@@ -105,6 +109,11 @@ export default function Layout({ onLogout }: LayoutProps) {
             <span className="sr-only">Open sidebar</span>
             <MenuIcon className="h-6 w-6" />
           </button>
+          
+          <div className="md:hidden">
+              <Logo className="h-8 w-8" showText={false} />
+          </div>
+
           <div className="text-right">
             <h2 className="text-md font-semibold text-slate-800">{settings.name}</h2>
             <p className="text-xs text-slate-500">{settings.treasurerName}</p>

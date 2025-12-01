@@ -121,24 +121,14 @@ export default function TransactionsPage() {
 
   const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
 
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async (data: any) => {
-    setSaving(true);
-    try {
-      if (editingTransaction) {
-        await updateTransaction({ ...editingTransaction, ...data });
-      } else {
-        await addTransaction(data);
-      }
-      setIsModalOpen(false);
-      setEditingTransaction(undefined);
-    } catch (err) {
-      alert('Gagal menyimpan transaksi. Silakan coba lagi.');
-      console.error(err);
-    } finally {
-      setSaving(false);
+  const handleSave = (data: any) => {
+    if (editingTransaction) {
+      updateTransaction({ ...editingTransaction, ...data });
+    } else {
+      addTransaction(data);
     }
+    setIsModalOpen(false);
+    setEditingTransaction(undefined);
   };
   
   const handleEdit = (transaction: Transaction) => {
@@ -146,14 +136,9 @@ export default function TransactionsPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
-      try {
-        await deleteTransaction(id);
-      } catch (err) {
-        alert('Gagal menghapus transaksi. Silakan coba lagi.');
-        console.error(err);
-      }
+      deleteTransaction(id);
     }
   };
   

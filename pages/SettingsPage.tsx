@@ -8,7 +8,6 @@ const CategoryManager: React.FC = () => {
     const [isAdding, setIsAdding] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [formData, setFormData] = useState({ name: '', type: TransactionType.Pemasukan });
-    const [saving, setSaving] = useState(false);
 
     const handleEdit = (category: Category) => {
         setEditingCategory(category);
@@ -21,31 +20,19 @@ const CategoryManager: React.FC = () => {
         setFormData({ name: '', type: TransactionType.Pemasukan });
     };
 
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
-        try {
-            if (editingCategory) {
-                await updateCategory({ ...editingCategory, ...formData });
-            } else {
-                await addCategory(formData);
-            }
-            handleCancel();
-        } catch (err) {
-            alert('Gagal menyimpan kategori. Silakan coba lagi.');
-            console.error(err);
-        } finally {
-            setSaving(false);
+        if (editingCategory) {
+            updateCategory({ ...editingCategory, ...formData });
+        } else {
+            addCategory(formData);
         }
+        handleCancel();
     };
     
-    const handleDelete = async (id: string) => {
+    const handleDelete = (id: string) => {
         if (window.confirm('Apakah Anda yakin ingin menghapus kategori ini?')) {
-            try {
-                await deleteCategory(id);
-            } catch (err) {
-                console.error(err);
-            }
+            deleteCategory(id);
         }
     };
 
@@ -107,24 +94,15 @@ const CategoryManager: React.FC = () => {
 export default function SettingsPage() {
     const { settings, updateSettings } = useAppContext();
     const [formData, setFormData] = useState<PondokSettings>(settings);
-    const [saving, setSaving] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setSaving(true);
-        try {
-            await updateSettings(formData);
-            alert('Pengaturan berhasil disimpan!');
-        } catch (err) {
-            alert('Gagal menyimpan pengaturan. Silakan coba lagi.');
-            console.error(err);
-        } finally {
-            setSaving(false);
-        }
+        updateSettings(formData);
+        alert('Pengaturan berhasil disimpan!');
     };
 
     return (

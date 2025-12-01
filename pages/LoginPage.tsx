@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Logo } from '../components/Logo';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -25,13 +26,29 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold text-primary-900">Pondok<span className="font-light text-primary-600">Finance</span></h1>
-            <p className="text-slate-500 mt-1">Aplikasi Manajemen Keuangan Pondok</p>
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+             <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="islamic-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                        <path d="M0 20 L20 0 L40 20 L20 40 Z" fill="none" stroke="currentColor" strokeWidth="1" className="text-primary-900"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#islamic-pattern)" />
+            </svg>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-lg sm:p-8">
+
+      <div className="w-full max-w-md relative z-10">
+        <div className="mb-8 flex flex-col items-center">
+            <div className="p-4 bg-white rounded-full shadow-md mb-4">
+                <Logo className="h-16 w-16" showText={false} />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-800">Selamat Datang</h1>
+            <p className="text-slate-500 mt-2 text-center">Silakan masuk untuk mengelola keuangan pondok.</p>
+        </div>
+        
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xl sm:p-8 backdrop-blur-sm bg-opacity-90">
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-slate-700">
@@ -46,13 +63,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+                  className="block w-full appearance-none rounded-lg border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm transition-all"
+                  placeholder="Masukkan username"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password"className="block text-sm font-medium text-slate-700">
+              <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                 Password
               </label>
               <div className="mt-1">
@@ -64,13 +82,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm"
+                  className="block w-full appearance-none rounded-lg border border-slate-300 px-3 py-2 placeholder-slate-400 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-primary-500 sm:text-sm transition-all"
+                  placeholder="Masukkan password"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
+              <div className="rounded-lg bg-red-50 p-4 border border-red-100 flex items-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
@@ -78,25 +100,34 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-600">
                   Ingat saya
                 </label>
+              </div>
+              <div className="text-sm">
+                <a href="#" className="font-medium text-primary-700 hover:text-primary-600">
+                  Lupa password?
+                </a>
               </div>
             </div>
 
             <div>
               <button
                 type="submit"
-                className="flex w-full justify-center rounded-md border border-transparent bg-primary-700 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                className="flex w-full justify-center rounded-lg border border-transparent bg-primary-700 py-2.5 px-4 text-sm font-semibold text-white shadow-md hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all transform hover:-translate-y-0.5"
               >
-                Masuk
+                Masuk Dashboard
               </button>
             </div>
           </form>
         </div>
-        <p className="mt-6 text-center text-xs text-slate-500">
-            Gunakan <code className="font-mono bg-slate-200 p-1 rounded">bendahara</code> / <code className="font-mono bg-slate-200 p-1 rounded">password123</code> untuk login.
-        </p>
+        <div className="mt-6 text-center">
+             <p className="text-xs text-slate-400 mb-2">Login Demo:</p>
+             <div className="inline-flex space-x-2">
+                <code className="font-mono text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">user: bendahara</code>
+                <code className="font-mono text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded">pass: password123</code>
+             </div>
+        </div>
       </div>
     </div>
   );

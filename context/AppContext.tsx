@@ -1,10 +1,12 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Transaction, Category, PondokSettings, TransactionType } from '../types';
-import { categoryService, transactionService, settingsService, migrationService } from '../services/supabaseService';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { generateInitialData } from '../services/mockDataService';
 
 interface AppContextType {
   settings: PondokSettings;
-  updateSettings: (newSettings: PondokSettings) => Promise<void>;
+  updateSettings: (newSettings: PondokSettings) => void;
   categories: Category[];
   addCategory: (category: Omit<Category, 'id'>) => Promise<void>;
   updateCategory: (category: Category) => Promise<void>;
@@ -15,148 +17,247 @@ interface AppContextType {
   updateTransaction: (transaction: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   loading: boolean;
-  error: string | null;
-  refreshData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const defaultSettings: PondokSettings = {
-  name: 'Pondok Pesantren Al-Hidayah',
-  address: 'Jl. Kebenaran No. 1, Kota Berkah',
-  treasurerName: 'Ahmad Syafi\'i',
+// Helper for Settings (Keep settings in localStorage for now to simplify, or move to DB later)
+const loadSettings = (): PondokSettings => {
+    try {
+        const item = window.localStorage.getItem('pondokSettings');
+        return item ? JSON.parse(item) : {
+            name: 'Pondok Pesantren Al-Hidayah',
+            address: 'Jl. Kebenaran No. 1, Kota Berkah',
+            treasurerName: 'Ahmad Syafi\'i',
+        };
+    } catch {
+        return { name: 'Pondok', address: '', treasurerName: '' };
+    }
 };
 
 export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<PondokSettings>(defaultSettings);
+  const [settings, setSettings] = useState<PondokSettings>(loadSettings);
   const [categories, setCategories] = useState<Category[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const loadAllData = useCallback(async () => {
+  // Fetch data from Supabase
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      setError(null);
-      
-      // Try to migrate from localStorage first (one-time operation)
-      const migrationResult = await migrationService.migrateFromLocalStorage();
-      if (migrationResult.categoriesMigrated > 0 || migrationResult.transactionsMigrated > 0) {
-        console.log('Migration completed:', migrationResult);
-      }
+        // 1. Fetch Categories
+        const { data: catData, error: catError } = await supabase
+            .from('categories')
+            .select('*')
+            .order('name');
+        
+        if (catError) throw catError;
 
-      // Load all data from Supabase
-      const [categoriesData, transactionsData, settingsData] = await Promise.all([
-        categoryService.getAll(),
-        transactionService.getAll(),
-        settingsService.get().catch(() => defaultSettings),
-      ]);
+        // 2. Fetch Transactions
+        const { data: trxData, error: trxError } = await supabase
+            .from('transactions')
+            .select('*')
+            .order('date', { ascending: false });
 
-      setCategories(categoriesData);
-      setTransactions(transactionsData);
-      setSettings(settingsData);
-    } catch (err) {
-      console.error('Error loading data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+        if (trxError) throw trxError;
+
+        if (catData) setCategories(catData);
+        if (trxData) {
+            const mappedTrx = trxData.map((t: any) => ({
+                id: t.id,
+                date: t.date,
+                type: t.type,
+                categoryId: t.category_id, // Map snake_case to camelCase
+                amount: t.amount,
+                description: t.description,
+                createdAt: t.created_at
+            }));
+            setTransactions(mappedTrx);
+        }
+
+    } catch (error) {
+        console.error("Error fetching data from Supabase:", error);
+        alert("Gagal mengambil data dari database. Pastikan tabel sudah dibuat di Supabase.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
-
-  const refreshData = useCallback(async () => {
-    setLoading(true);
-    await loadAllData();
-  }, [loadAllData]);
-
-  const updateSettings = useCallback(async (newSettings: PondokSettings) => {
-    try {
-      const updated = await settingsService.update(newSettings);
-      setSettings(updated);
-    } catch (err) {
-      console.error('Error updating settings:', err);
-      throw err;
+    // Check if keys are set using the helper flag
+    if (!isSupabaseConfigured) {
+        console.warn("Supabase keys not set. Loading mock data.");
+        // Fallback to mock data if no keys
+        const { categories: initialCat, transactions: initialTrx } = generateInitialData();
+        setCategories(initialCat);
+        setTransactions(initialTrx);
+        setLoading(false);
+    } else {
+        fetchData();
     }
   }, []);
-
-  const addCategory = useCallback(async (category: Omit<Category, 'id'>) => {
-    try {
-      const newCategory = await categoryService.create(category);
-      setCategories(prev => [...prev, newCategory].sort((a, b) => a.name.localeCompare(b.name)));
-    } catch (err) {
-      console.error('Error adding category:', err);
-      throw err;
+  
+  const updateSettings = (newSettings: PondokSettings) => {
+    setSettings(newSettings);
+    window.localStorage.setItem('pondokSettings', JSON.stringify(newSettings));
+  };
+  
+  const addCategory = async (category: Omit<Category, 'id'>) => {
+    if (!isSupabaseConfigured) {
+        // Mock implementation for demo without keys
+        const newCat = { ...category, id: Math.random().toString(36).substring(7) };
+        setCategories(prev => [...prev, newCat]);
+        return;
     }
-  }, []);
-
-  const updateCategory = useCallback(async (updatedCategory: Category) => {
     try {
-      const result = await categoryService.update(updatedCategory);
-      setCategories(prev => prev.map(cat => cat.id === result.id ? result : cat));
-    } catch (err) {
-      console.error('Error updating category:', err);
-      throw err;
+        const { data, error } = await supabase
+            .from('categories')
+            .insert([category])
+            .select()
+            .single();
+
+        if (error) throw error;
+        setCategories(prev => [...prev, data]);
+    } catch (error) {
+        console.error("Error adding category:", error);
+        alert("Gagal menambah kategori.");
     }
-  }, []);
+  };
 
-  const deleteCategory = useCallback(async (id: string): Promise<boolean> => {
+  const updateCategory = async (updatedCategory: Category) => {
+    if (!isSupabaseConfigured) {
+         setCategories(prev => prev.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat)));
+         return;
+    }
     try {
-      const isUsed = await categoryService.isUsedInTransactions(id);
-      if (isUsed) {
-        alert('Kategori ini sedang digunakan dalam transaksi dan tidak bisa dihapus.');
-        return false;
-      }
-      await categoryService.delete(id);
-      setCategories(prev => prev.filter(cat => cat.id !== id));
-      return true;
-    } catch (err) {
-      console.error('Error deleting category:', err);
+        const { error } = await supabase
+            .from('categories')
+            .update({ name: updatedCategory.name, type: updatedCategory.type })
+            .eq('id', updatedCategory.id);
+
+        if (error) throw error;
+        setCategories(prev => prev.map(cat => (cat.id === updatedCategory.id ? updatedCategory : cat)));
+    } catch (error) {
+        console.error("Error updating category:", error);
+        alert("Gagal update kategori.");
+    }
+  };
+
+  const deleteCategory = async (id: string): Promise<boolean> => {
+    const isUsed = transactions.some(t => t.categoryId === id);
+    if (isUsed) {
+      alert('Kategori ini sedang digunakan dalam transaksi dan tidak bisa dihapus.');
       return false;
     }
-  }, []);
 
+    if (!isSupabaseConfigured) {
+        setCategories(prev => prev.filter(cat => cat.id !== id));
+        return true;
+    }
+
+    try {
+        const { error } = await supabase.from('categories').delete().eq('id', id);
+        if (error) throw error;
+        setCategories(prev => prev.filter(cat => cat.id !== id));
+        return true;
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        alert("Gagal menghapus kategori.");
+        return false;
+    }
+  };
+  
   const getCategoryById = useCallback((id: string) => {
     return categories.find(cat => cat.id === id);
   }, [categories]);
 
-  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
-    try {
-      const newTransaction = await transactionService.create(transaction);
-      setTransactions(prev => 
-        [newTransaction, ...prev].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-      );
-    } catch (err) {
-      console.error('Error adding transaction:', err);
-      throw err;
+  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
+    if (!isSupabaseConfigured) {
+        const newTrx: Transaction = {
+            ...transaction,
+            id: Math.random().toString(36).substring(7),
+            createdAt: new Date().toISOString()
+        };
+        setTransactions(prev => [newTrx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        return;
     }
-  }, []);
 
-  const updateTransaction = useCallback(async (updatedTransaction: Transaction) => {
     try {
-      const result = await transactionService.update(updatedTransaction);
-      setTransactions(prev => 
-        prev.map(t => t.id === result.id ? result : t)
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      );
-    } catch (err) {
-      console.error('Error updating transaction:', err);
-      throw err;
-    }
-  }, []);
+        const payload = {
+            date: transaction.date,
+            type: transaction.type,
+            category_id: transaction.categoryId, // Map to snake_case for DB
+            amount: transaction.amount,
+            description: transaction.description,
+        };
 
-  const deleteTransaction = useCallback(async (id: string) => {
-    try {
-      await transactionService.delete(id);
-      setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      console.error('Error deleting transaction:', err);
-      throw err;
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert([payload])
+            .select()
+            .single();
+        
+        if (error) throw error;
+
+        const newTrx: Transaction = {
+            id: data.id,
+            date: data.date,
+            type: data.type,
+            categoryId: data.category_id,
+            amount: data.amount,
+            description: data.description,
+            createdAt: data.created_at
+        };
+
+        setTransactions(prev => [newTrx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    } catch (error) {
+        console.error("Error adding transaction:", error);
+        alert("Gagal menyimpan transaksi.");
     }
-  }, []);
+  };
+
+  const updateTransaction = async (updatedTransaction: Transaction) => {
+    if (!isSupabaseConfigured) {
+        setTransactions(prev => prev.map(trx => (trx.id === updatedTransaction.id ? updatedTransaction : trx)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+        return;
+    }
+    try {
+        const payload = {
+            date: updatedTransaction.date,
+            type: updatedTransaction.type,
+            category_id: updatedTransaction.categoryId,
+            amount: updatedTransaction.amount,
+            description: updatedTransaction.description
+        };
+
+        const { error } = await supabase
+            .from('transactions')
+            .update(payload)
+            .eq('id', updatedTransaction.id);
+
+        if (error) throw error;
+
+        setTransactions(prev => prev.map(trx => (trx.id === updatedTransaction.id ? updatedTransaction : trx)).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    } catch (error) {
+        console.error("Error updating transaction:", error);
+        alert("Gagal update transaksi.");
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    if (!isSupabaseConfigured) {
+        setTransactions(prev => prev.filter(trx => trx.id !== id));
+        return;
+    }
+    try {
+        const { error } = await supabase.from('transactions').delete().eq('id', id);
+        if (error) throw error;
+        setTransactions(prev => prev.filter(trx => trx.id !== id));
+    } catch (error) {
+        console.error("Error deleting transaction:", error);
+        alert("Gagal menghapus transaksi.");
+    }
+  };
 
   const value = {
     settings,
@@ -170,9 +271,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     addTransaction,
     updateTransaction,
     deleteTransaction,
-    loading,
-    error,
-    refreshData,
+    loading
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
