@@ -1,0 +1,5 @@
+{
+  "name": "Pondok Finance Manager",
+  "description": "A web application to manage the finances of a 'pondok pesantren' (Islamic boarding school). It allows treasurers to record income and expenses, categorize transactions, and generate monthly and annual reports.",
+  "requestFramePermissions": []
+}
